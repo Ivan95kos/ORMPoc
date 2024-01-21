@@ -12,15 +12,26 @@ public class OrmPoCApplication {
     public static void main(String[] args) {
         DataSource dataSource = initDB();
 
-        Repository repository = new DefaultRepository(dataSource);
+        try (Repository repository = new DefaultRepository(dataSource)) {
+            System.out.println("First call to DB");
+            repository.findById(Person.class, 1L).ifPresent(System.out::println);
+            repository.findById(Note.class, 1L).ifPresent(System.out::println);
 
-        System.out.println("First call to DB");
-        repository.findById(Person.class, 1L).ifPresent(System.out::println);
-        repository.findById(Note.class, 1L).ifPresent(System.out::println);
 
-        System.out.println("Second call to DB");
-        repository.findById(Person.class, 1L).ifPresent(System.out::println);
-        repository.findById(Note.class, 1L).ifPresent(System.out::println);
+            System.out.println("Second call to DB");
+            repository.findById(Person.class, 1L).ifPresent(System.out::println);
+            repository.findById(Note.class, 1L).ifPresent(System.out::println);
+
+            System.out.println("Dirty Checking");
+            repository.findById(Person.class, 1L).ifPresent(person -> person.setLastName("New LastName"));
+            repository.findById(Note.class, 1L).ifPresent(note -> note.setBody("New Body"));
+        }
+
+        try (Repository repository = new DefaultRepository(dataSource)) {
+            System.out.println("Call to DB after Dirty Checking");
+            repository.findById(Person.class, 1L).ifPresent(System.out::println);
+            repository.findById(Note.class, 1L).ifPresent(System.out::println);
+        }
     }
 
     public static DataSource initDB() {
