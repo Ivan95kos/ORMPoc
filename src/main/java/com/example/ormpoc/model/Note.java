@@ -4,11 +4,15 @@ import com.example.ormpoc.annotation.Column;
 import com.example.ormpoc.annotation.Entity;
 import com.example.ormpoc.annotation.Id;
 import com.example.ormpoc.annotation.Table;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 
 @Entity
 @Table(name = "notes")
 @ToString
+@Setter
+@Getter
 public class Note {
 
     @Id
