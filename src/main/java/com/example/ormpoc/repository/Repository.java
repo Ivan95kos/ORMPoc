@@ -2,8 +2,8 @@ package com.example.ormpoc.repository;
 
 import java.util.Optional;
 
-public interface Repository<T, ID> {
+public interface Repository {
 
-    Optional<T> findById(ID id);
+    <T> Optional<T> findById(Class<T> clazz, Object id);
 
 }

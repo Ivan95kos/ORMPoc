@@ -12,19 +12,23 @@ public class OrmPoCApplication {
     public static void main(String[] args) {
         DataSource dataSource = initDB();
 
-        Repository<Person, Long> personRepository = new DefaultRepository<>(dataSource, Person.class);
-        Repository<Note, Long> noteRepository = new DefaultRepository<>(dataSource, Note.class);
+        Repository repository = new DefaultRepository(dataSource);
 
-        personRepository.findById(1L).ifPresent(System.out::println);
-        noteRepository.findById(1L).ifPresent(System.out::println);
+        System.out.println("First call to DB");
+        repository.findById(Person.class, 1L).ifPresent(System.out::println);
+        repository.findById(Note.class, 1L).ifPresent(System.out::println);
+
+        System.out.println("Second call to DB");
+        repository.findById(Person.class, 1L).ifPresent(System.out::println);
+        repository.findById(Note.class, 1L).ifPresent(System.out::println);
     }
 
     public static DataSource initDB() {
         var dataSource = new PGSimpleDataSource();
         dataSource.setURL("jdbc:postgresql://localhost:5432/postgres");
         dataSource.setDatabaseName("postgres");
-        dataSource.setUser("postgres");
-        dataSource.setPassword("example");
+        dataSource.setUser("user");
+        dataSource.setPassword("password");
         return dataSource;
     }
 }

@@ -17,6 +17,6 @@ public class Person {
     @Column(name = "first_name")
     private String firstName;
 
-    @Column(name = "surname")
-    private String surname;
+    @Column(name = "last_name")
+    private String lastName;
 }
