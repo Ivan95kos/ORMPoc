@@ -10,35 +10,43 @@ import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RequiredArgsConstructor
-public class DefaultRepository<T, ID> implements Repository<T, ID> {
+public class DefaultRepository implements Repository {
     private static final String ENTITY_NOT_FOUND_MESSAGE = "Entity not found by id: %s.";
     private static final String FIND_BY_ID_TEMPLATE = "SELECT * FROM %s WHERE %s = ?";
 
+    private Map<EntityKey<?>, Object> cashEntities = new ConcurrentHashMap<>();
+
     private final DataSource dataSource;
-    private final Class<T> clazz;
 
     @Override
-    public Optional<T> findById(ID id) {
-        String selectQuery = FIND_BY_ID_TEMPLATE.formatted(
-                EntityUtil.getTableName(clazz),
-                EntityUtil.getFieldIdName(clazz));
+    public <T, ID> Optional<T> findById(Class<T> clazz, ID id) {
+        EntityKey<T> entityKey = new EntityKey<>(clazz, id);
+        return Optional.ofNullable(clazz.cast(cashEntities.computeIfAbsent(entityKey, this::find)));
+    }
 
+    private <T> T find(EntityKey<T> entityKey) {
+        String selectQuery = FIND_BY_ID_TEMPLATE.formatted(
+                EntityUtil.getTableName(entityKey.getClazz()),
+                EntityUtil.getFieldIdName(entityKey.getClazz()));
         try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(selectQuery)) {
-            preparedStatement.setObject(1, id);
+            preparedStatement.setObject(1, entityKey.getId());
             ResultSet resultSet = preparedStatement.executeQuery();
+            System.out.println("Query : '" + selectQuery + "' is executed");
 
-            return resultSet.next() ? prepareEntity(resultSet) : Optional.empty();
+            return resultSet.next() ? prepareEntity(resultSet, entityKey.getClazz()) : null;
         } catch (Exception e) {
-            throw new NotFoundEntityException(ENTITY_NOT_FOUND_MESSAGE.formatted(id), e);
+            throw new NotFoundEntityException(ENTITY_NOT_FOUND_MESSAGE.formatted(entityKey.getId()), e);
         }
     }
 
     @SneakyThrows
-    private Optional<T> prepareEntity(ResultSet resultSet) {
+    private <T> T prepareEntity(ResultSet resultSet, Class<T> clazz) {
         T entity = clazz.getDeclaredConstructor().newInstance();
 
         for (Field field : clazz.getDeclaredFields()) {
@@ -49,6 +57,6 @@ public class DefaultRepository<T, ID> implements Repository<T, ID> {
             field.set(entity, value);
         }
 
-        return Optional.of(entity);
+        return entity;
     }
 }
